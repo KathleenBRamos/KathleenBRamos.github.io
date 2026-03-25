@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KITCUTS — Cinematic Video Editing</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A0F14;--bg2:#070b0f;--card:rgba(255,255,255,.03);--border:rgba(255,255,255,.07);
+  --teal:#00BFA6;--teal2:#00E5CC;--orange:#FF6B00;--orange2:#FF9A3C;
+  --white:#fff;--gray:#6b7280;--light:#a0aab4;
+  --barlow:'Barlow Condensed',sans-serif;--inter:'Inter',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--inter);background:var(--bg);color:var(--white);overflow-x:hidden}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--teal),var(--orange))}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 5rem;background:rgba(7,11,15,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);transition:padding .3s}
+.logo{font-family:var(--barlow);font-size:2rem;font-weight:900;letter-spacing:.14em;text-decoration:none;background:linear-gradient(90deg,var(--teal),var(--orange2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{font-size:.74rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--light);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--teal)}
+.nav-cta{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--bg);background:linear-gradient(90deg,var(--teal),var(--teal2));padding:.6rem 1.5rem;border-radius:4px;text-decoration:none;box-shadow:0 0 14px rgba(0,191,166,.25);transition:box-shadow .2s,transform .15s}
+.nav-cta:hover{box-shadow:0 0 26px rgba(0,191,166,.45);transform:scale(1.03)}
+.hbg{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:4px}
+.hbg span{width:22px;height:1.5px;background:var(--white);display:block}
+
+/* ═══════════════════════════
+   HERO — REFINED, NOT LOUD
+═══════════════════════════ */
+#hero{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:0 2rem;
+  position:relative;overflow:hidden;
+}
+
+/* Clean dark bg with very subtle ambient — no heavy bloom */
+.h-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 85%, rgba(0,191,166,.18) 0%, rgba(0,191,166,.04) 45%, transparent 65%),
+    radial-gradient(ellipse 40% 30% at 18% 90%, rgba(255,107,0,.1) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 82% 90%, rgba(0,229,204,.08) 0%, transparent 55%),
+    radial-gradient(ellipse 65% 55% at 50% 50%, #0c1a20 0%, var(--bg) 70%);
+  pointer-events:none;
+}
+
+/* Very subtle grid */
+.h-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(0,191,166,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,191,166,.02) 1px,transparent 1px);
+  background-size:70px 70px;pointer-events:none;opacity:.8;
+}
+
+/* Single soft teal ambient — top left, barely visible */
+.h-amb{
+  position:absolute;width:500px;height:500px;
+  background:radial-gradient(circle,rgba(0,191,166,.06) 0%,transparent 65%);
+  top:-100px;left:-100px;pointer-events:none;
+}
+
+/* Single soft orange ambient — bottom right */
+.h-amb2{
+  position:absolute;width:400px;height:400px;
+  background:radial-gradient(circle,rgba(255,107,0,.05) 0%,transparent 65%);
+  bottom:-60px;right:-60px;pointer-events:none;
+}
+
+/* Subtle lens flares — very low opacity */
+.fl1{position:absolute;width:200px;height:45px;background:radial-gradient(ellipse,rgba(0,229,204,.07),transparent 70%);top:46%;left:6%;transform:rotate(-16deg);pointer-events:none;mix-blend-mode:screen}
+.fl2{position:absolute;width:150px;height:38px;background:radial-gradient(ellipse,rgba(255,107,0,.06),transparent 70%);top:49%;right:6%;transform:rotate(13deg);pointer-events:none;mix-blend-mode:screen}
+
+/* Subtle horizontal streak */
+.streak{position:absolute;top:53.5%;left:0;right:0;height:3px;pointer-events:none;background:linear-gradient(90deg,transparent 5%,rgba(0,191,166,.08) 30%,rgba(0,229,204,.2) 50%,rgba(255,107,0,.06) 72%,transparent 95%)}
+
+/* Canvas particles */
+canvas#pts{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.5}
+
+.h-content{position:relative;z-index:10}
+
+.badge{
+  display:inline-flex;align-items:center;gap:.6rem;
+  font-size:.68rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--teal);border:1px solid rgba(0,191,166,.25);
+  padding:.38rem 1.1rem;border-radius:100px;margin-bottom:2.2rem;
+  background:rgba(0,191,166,.04);
+  animation:fdu .7s ease forwards;
+}
+.bdot{width:5px;height:5px;background:var(--teal);border-radius:50%;animation:pulse 2.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* TITLE — clean size, not screen-filling */
+.h-title{
+  font-family:var(--barlow);
+  font-size:clamp(5rem,13vw,13rem);
+  font-weight:900;letter-spacing:.06em;line-height:.88;
+  margin-bottom:1.8rem;
+  animation:fdu .7s .1s ease both;
+  position:relative;
+  will-change:transform;
+}
+
+/* Shimmer gradient — same as before, works great */
+.tinner{
+  display:block;
+  background:linear-gradient(135deg,#fff 0%,#d8f8f4 20%,var(--teal2) 44%,#fff 57%,var(--orange2) 80%,#fff 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shim 6s linear infinite;
+  /* Single subtle drop-shadow — not stacked multiples */
+  filter:drop-shadow(0 0 18px rgba(0,191,166,.28)) drop-shadow(0 2px 18px rgba(255,107,0,.1));
+}
+@keyframes shim{0%{background-position:0% center}100%{background-position:200% center}}
+
+/* Gentle underglow under title only */
+.title-glow{
+  position:absolute;
+  bottom:-15px;left:50%;transform:translateX(-50%);
+  width:80%;height:60px;
+  background:radial-gradient(ellipse 70% 100% at 50% 100%,rgba(0,191,166,.2) 0%,rgba(255,107,0,.07) 55%,transparent 75%);
+  pointer-events:none;
+}
+
+.tagline{
+  font-size:clamp(.9rem,1.8vw,1.08rem);font-weight:300;
+  color:var(--light);letter-spacing:.05em;
+  margin-bottom:2.8rem;
+  animation:fdu .7s .2s ease both;
+}
+.tagline span{color:var(--teal);font-weight:500}
+
+.hbtns{display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;animation:fdu .7s .3s ease both;margin-bottom:4.5rem}
+.btn-m{background:linear-gradient(90deg,var(--teal),var(--teal2));color:var(--bg);font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.88rem 2.2rem;text-decoration:none;border-radius:6px;box-shadow:0 0 18px rgba(0,191,166,.25);transition:box-shadow .2s,transform .2s}
+.btn-m:hover{box-shadow:0 0 34px rgba(0,191,166,.45);transform:translateY(-2px)}
+.btn-s{background:transparent;color:var(--light);font-size:.8rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.88rem 2.2rem;text-decoration:none;border:1px solid rgba(255,255,255,.1);border-radius:6px;transition:border-color .2s,color .2s,transform .2s}
+.btn-s:hover{border-color:var(--teal);color:var(--teal);transform:translateY(-2px)}
+
+.scroll-cue{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;opacity:0;animation:fdi 1s 1.2s ease forwards;z-index:10}
+.scroll-cue span{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gray)}
+.sline{width:1px;height:36px;background:linear-gradient(var(--teal),transparent);animation:scl 1.5s ease-in-out infinite}
+@keyframes scl{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+@keyframes fdu{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fdi{from{opacity:0}to{opacity:1}}
+
+/* SHARED */
+.sec-ey{font-size:.7rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--teal);display:flex;align-items:center;gap:.75rem;margin-bottom:.8rem}
+.sec-ey::before{content:'';width:28px;height:1px;background:var(--teal)}
+.sec-h{font-family:var(--barlow);font-size:clamp(2.5rem,5vw,4.8rem);font-weight:900;letter-spacing:.06em;line-height:.9;margin-bottom:.6rem}
+.sec-h span{background:linear-gradient(90deg,var(--teal),var(--orange2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}
+
+/* PORTRAIT PORTFOLIO */
+#port-portrait{padding:8rem 5rem;background:var(--bg2);position:relative;overflow:hidden}
+#port-portrait::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent)}
+.port-label{display:inline-flex;align-items:center;gap:.6rem;font-size:.85rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:2.5rem;padding:.6rem 1.8rem;border-radius:100px}
+.pl-p{color:var(--teal);border:1px solid rgba(0,191,166,.25);background:rgba(0,191,166,.06)}
+.pl-l{color:var(--orange2);border:1px solid rgba(255,107,0,.25);background:rgba(255,107,0,.06)}
+.phone-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1.25rem}
+.phone{aspect-ratio:9/16;background:var(--card);border:1px solid var(--border);border-radius:22px;overflow:hidden;position:relative;cursor:pointer;transition:transform .3s,box-shadow .3s}
+.phone:hover{transform:translateY(-8px) scale(1.02);box-shadow:0 20px 44px rgba(0,191,166,.12)}
+.pinner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
+.ppb1{background:linear-gradient(160deg,#060e16,#0d1e2e)}
+.ppb2{background:linear-gradient(160deg,#100808,#201010)}
+.ppb3{background:linear-gradient(160deg,#060e0c,#0d1e18)}
+.ppb4{background:linear-gradient(160deg,#0e0c06,#1e1a0d)}
+.ppb5{background:linear-gradient(160deg,#0c0614,#1a0e28)}
+.pov{position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,191,166,.14),rgba(255,107,0,.09));opacity:.45;transition:opacity .3s}
+.phone:hover .pov{opacity:.8}
+.pplay{width:44px;height:44px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;transition:all .3s}
+.phone:hover .pplay{background:rgba(0,191,166,.2);border-color:var(--teal);box-shadow:0 0 18px rgba(0,191,166,.35);transform:scale(1.1)}
+.pplay svg{width:14px;height:14px;fill:white;margin-left:3px}
+.plbl{position:absolute;bottom:0;left:0;right:0;padding:.85rem .9rem .75rem;background:linear-gradient(transparent,rgba(4,8,12,.9))}
+.plbl-cat{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);display:block;margin-bottom:.2rem}
+.plbl-title{font-size:.72rem;font-weight:600;color:var(--white);line-height:1.25}
+.notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:36px;height:5px;background:rgba(255,255,255,.09);border-radius:100px;z-index:2}
+
+/* LANDSCAPE PORTFOLIO */
+#port-landscape{padding:3rem 5rem 8rem;background:var(--bg2)}
+.land-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.wi{position:relative;border-radius:14px;overflow:hidden;cursor:pointer;background:var(--card);border:1px solid var(--border);transition:transform .3s,box-shadow .3s}
+.wi:hover{transform:translateY(-5px);box-shadow:0 14px 38px rgba(255,107,0,.09)}
+.wthumb{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.wov{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,107,0,.13),rgba(0,191,166,.1));opacity:.45;transition:opacity .3s}
+.wi:hover .wov{opacity:.9}
+.lbg1{background:linear-gradient(135deg,#060d12,#0d1820)}
+.lbg2{background:linear-gradient(135deg,#0d0806,#1a1008)}
+.lbg3{background:linear-gradient(135deg,#06080d,#0c0f1a)}
+.wplay{width:50px;height:50px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;transition:all .3s}
+.wi:hover .wplay{background:rgba(255,107,0,.18);border-color:var(--orange);box-shadow:0 0 18px rgba(255,107,0,.32);transform:scale(1.1)}
+.wplay svg{width:16px;height:16px;fill:white;margin-left:3px}
+.wglow{position:absolute;inset:0;border:1px solid transparent;border-radius:14px;transition:border-color .3s;pointer-events:none}
+.wi:hover .wglow{border-color:rgba(255,107,0,.18)}
+.winfo{padding:1rem 1.2rem 1.25rem}
+.wcat{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--orange2);margin-bottom:.3rem}
+.wtitle{font-size:.9rem;font-weight:600;color:var(--white);margin-bottom:.2rem}
+.wsub{font-size:.74rem;color:var(--gray)}
+
+/* REVIEWS */
+#reviews{padding:8rem 5rem;background:var(--bg);position:relative}
+#reviews::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--orange),transparent)}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3.5rem}
+.rc{background:rgba(255,255,255,.024);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:2rem;backdrop-filter:blur(10px);transition:border-color .3s,box-shadow .3s,transform .3s}
+.rc:hover{border-color:rgba(0,191,166,.18);box-shadow:0 6px 30px rgba(0,191,166,.06);transform:translateY(-4px)}
+.rq{font-size:2.5rem;line-height:1;background:linear-gradient(90deg,var(--teal),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.75rem;font-family:Georgia,serif}
+.rstar{color:var(--teal);font-size: 2rem;letter-spacing:3px;margin-bottom:.75rem}
+.rtxt{font-size:.86rem;line-height:1.85;color:var(--light);font-weight:300;font-style:italic;margin-bottom:1.5rem}
+.rauth{display:flex;align-items:center;gap:.85rem}
+.rav{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,191,166,.22),rgba(255,107,0,.15));border:1px solid rgba(0,191,166,.25);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;color:var(--teal);flex-shrink:0;font-family:var(--barlow)}
+.rname{font-size:.88rem;font-weight:600;color:var(--white)}
+.rrole{font-size:.7rem;color:var(--gray)}
+
+/* ABOUT */
+#about{padding:8rem 5rem;background:var(--bg2);display:grid;grid-template-columns:0.5fr 1fr;gap:6rem;align-items:center;position:relative}
+#about::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,191,166,.3),transparent)}
+.aframe{position:relative}
+.ainner{aspect-ratio:3/4;background:linear-gradient(135deg,#0d1820,#10141a);border-radius:16px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.ainner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 30% 0%,rgba(0,191,166,.1),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 100%,rgba(255,107,0,.08),transparent 60%)}
+.amono{font-family:var(--barlow);font-size:8rem;font-weight:900;background:linear-gradient(135deg,rgba(0,191,166,.45),rgba(255,107,0,.28));-webkit-background-clip:text;-webkit-text-fill-color:transparent;position:relative;z-index:1}
+.agl-t{position:absolute;top:-30px;left:-30px;width:180px;height:180px;background:radial-gradient(circle,rgba(0,191,166,.12),transparent 70%);pointer-events:none}
+.agl-o{position:absolute;bottom:-30px;right:-30px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,107,0,.1),transparent 70%);pointer-events:none}
+.atag{position:absolute;bottom:-16px;right:-16px;background:linear-gradient(90deg,var(--teal),var(--teal2));color:var(--bg);font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:.55rem 1.1rem;border-radius:100px;box-shadow:0 4px 12px rgba(0,191,166,.3)}
+.abody{font-size:.94rem;line-height:1.9;color:var(--light);font-weight:300;margin-bottom:1.5rem}
+.abody strong{color:var(--white);font-weight:600}
+.skills{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:2rem}
+.sk{font-size:.7rem;font-weight:500;padding:.35rem .9rem;border-radius:100px;border:1px solid rgba(0,191,166,.18);color:var(--light);background:rgba(0,191,166,.04);transition:all .2s;cursor:default}
+.sk:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,191,166,.08)}
+
+/* CONTACT */
+#contact{padding:8rem 5rem;background:var(--bg);text-align:center;position:relative;overflow:hidden}
+#contact::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--orange),var(--teal),transparent)}
+.cgl-t{position:absolute;width:450px;height:300px;background:radial-gradient(circle,rgba(0,191,166,.05),transparent 70%);top:0;left:0;pointer-events:none}
+.cgl-o{position:absolute;width:400px;height:300px;background:radial-gradient(circle,rgba(255,107,0,.04),transparent 70%);bottom:0;right:0;pointer-events:none}
+.c-head{font-family:var(--barlow);font-size:clamp(3rem,8vw,7rem);font-weight:900;letter-spacing:.06em;line-height:.9;margin-bottom:1.5rem;position:relative;z-index:1}
+.c-head span{background:linear-gradient(90deg,var(--teal),var(--orange2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.c-sub{font-size:1rem;color:var(--gray);font-weight:300;margin-bottom:3.5rem;position:relative;z-index:1}
+.socials{display:flex;justify-content:center;gap:1.25rem;margin-bottom:3.5rem;flex-wrap:wrap;position:relative;z-index:1}
+.soc{display:flex;align-items:center;gap:.65rem;font-size:1rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--light);text-decoration:none;padding:1.2rem 3rem;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02);transition:all .25s}
+.soc svg{width:18px;height:18px;fill:currentColor;flex-shrink:0}
+.soc:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,191,166,.05);box-shadow:0 0 14px rgba(0,191,166,.1);transform:translateY(-3px)}
+.cdiv{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:3rem auto}
+.cinfo{display:flex;justify-content:center;gap:4rem;flex-wrap:wrap;position:relative;z-index:1}
+.cit .cl{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:.3rem}
+.cit .cv{font-size:.9rem;font-weight:500;color:var(--white)}
+
+/* FOOTER */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:1.75rem 5rem;display:flex;justify-content:space-between;align-items:center}
+.flogo{font-family:var(--barlow);font-size:1.5rem;font-weight:900;letter-spacing:.14em;background:linear-gradient(90deg,var(--teal),var(--orange2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.flinks{display:flex;gap:1.5rem}
+.flinks a{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);text-decoration:none;transition:color .2s}
+.flinks a:hover{color:var(--teal)}
+.fcopy{font-size:.68rem;color:var(--gray)}
+
+@media(max-width:1100px){
+  nav{padding:1rem 1.5rem}.nav-links,.nav-cta{display:none}.hbg{display:flex}
+  #port-portrait,#port-landscape,#reviews,#contact{padding:6rem 1.5rem}
+  #about{grid-template-columns:1fr;padding:6rem 1.5rem;gap:3rem}
+  .phone-grid{grid-template-columns:repeat(3,1fr)}
+  .land-grid,.rgrid{grid-template-columns:1fr 1fr}
+  footer{padding:1.5rem;flex-direction:column;gap:1rem;text-align:center}.flinks{justify-content:center}
+}
+@media(max-width:600px){
+  .phone-grid{grid-template-columns:repeat(2,1fr)}
+  .land-grid,.rgrid{grid-template-columns:1fr}
+  .hbtns{flex-direction:column;align-items:center}
+}
+
+
+#video-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+#video-modal.active {
+  display: flex;
+}
+
+.modal-box {
+  position: relative;
+  width: 90%;
+  max-width: 960px;
+}
+
+.modal-video {
+  padding: 56.25% 0 0 0;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.modal-close:hover {
+  opacity: 1;
+}
+
+.wthumb {
+  cursor: pointer;
+}
+
+.wthumb {
+  position: relative;
+}
+
+</style>
+</head>
+<body>
+
+<nav id="mainnav">
+  <a href="#hero" class="logo">KITCUTS</a>
+  <ul class="nav-links">
+    <li><a href="#port-portrait">Works</a></li>
+    <li><a href="#reviews">Reviews</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">Hire Me</a>
+  <button class="hbg" onclick="toggleNav()"><span></span><span></span><span></span></button>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="h-bg"></div>
+  <div class="h-grid"></div>
+  <div class="h-amb"></div>
+  <div class="h-amb2"></div>
+  <div class="fl1"></div>
+  <div class="fl2"></div>
+  <div class="streak"></div>
+  <canvas id="pts"></canvas>
+  <div class="h-content">
+    <div class="badge"><span class="bdot"></span>Available for Projects</div>
+    <h1 class="h-title">
+      <div class="title-glow"></div>
+      <span class="tinner">KITCUTS</span>
+    </h1>
+    <p class="tagline">Turning ideas into <span>cinematic visuals</span> — frame by frame.</p>
+    <div class="hbtns">
+      <a href="#port-portrait" class="btn-m">View My Work</a>
+      <a href="#contact" class="btn-s">Start a Project</a>
+    </div>
+  </div>
+  <div class="scroll-cue"><span>Scroll</span><div class="sline"></div></div>
+</section>
+
+<!-- PORTRAIT PORTFOLIO -->
+<section id="port-portrait">
+  <div class="reveal">
+    <p class="sec-ey">Portfolio</p>
+    <h2 class="sec-h">SELECTED <span>WORKS</span></h2>
+  </div>
+  <div class="reveal d1"><div class="port-label pl-p">Short-Form · Reels · TikTok · Vertical</div></div>
+  <div class="phone-grid">
+
+    <!-- Card 1 -->
+    <div class="phone reveal">
+      <div class="pinner ppb1">
+        <div class="notch"></div>
+        <div class="pov"></div>
+        <iframe 
+          src="https://player.vimeo.com/video/1176198794?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="plbl"><span class="plbl-title">Lifestyle Brand Cut</span></div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="phone reveal d1">
+      <div class="pinner ppb2">
+        <div class="notch"></div>
+        <div class="pov"></div>
+        <iframe 
+          src="https://player.vimeo.com/video/1176746251?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="plbl"><span class="plbl-title">Basketball Highlights</span></div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="phone reveal d2">
+      <div class="pinner ppb3">
+        <div class="notch"></div>
+        <div class="pov"></div>
+        <iframe 
+          src="https://player.vimeo.com/video/1176752300?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="plbl"><span class="plbl-title">Behind The Scenes</span></div>
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="phone reveal d3">
+      <div class="pinner ppb4">
+        <div class="notch"></div>
+        <div class="pov"></div>
+        <iframe 
+          src="https://player.vimeo.com/video/1176754342?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="plbl"><span class="plbl-title">Teleserye Promotion</span></div>
+      </div>
+    </div>
+
+    <!-- Card 5 -->
+    <div class="phone reveal d4">
+      <div class="pinner ppb5">
+        <div class="notch"></div>
+        <div class="pov"></div>
+        <iframe 
+          src="https://player.vimeo.com/video/1176749681?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="plbl"><span class="plbl-title">Business Promotion</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- LANDSCAPE PORTFOLIO -->
+<!-- LANDSCAPE PORTFOLIO -->
+<section id="port-landscape">
+  <div class="reveal"><div class="port-label pl-l">Cinematic · Corporate · Long-Form · Landscape</div></div>
+  <div class="land-grid">
+
+    <!-- Card 1 -->
+    <div class="wi reveal">
+      <div class="wthumb lbg1">
+        <div class="wov"></div>
+        <iframe
+          src="https://player.vimeo.com/video/1176750383?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          allow="autoplay; fullscreen; picture-in-picture"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="wglow"></div>
+      </div>
+      <div class="winfo">
+        <div class="wcat">Documentary</div>
+        <div class="wtitle">GMA Actors Interview Stories</div>
+        <div class="wsub">Real · Behind Scenes</div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="wi reveal d1">
+      <div class="wthumb lbg2">
+        <div class="wov"></div>
+        <iframe
+          src="https://player.vimeo.com/video/1176772110?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          allow="autoplay; fullscreen; picture-in-picture"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="wglow"></div>
+      </div>
+      <div class="winfo">
+        <div class="wcat">Promotional Video</div>
+        <div class="wtitle">Discover Lipa City</div>
+        <div class="wsub">Explore · Student Life</div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="wi reveal d2">
+      <div class="wthumb lbg3">
+        <div class="wov"></div>
+        <iframe
+          src="https://player.vimeo.com/video/1176203603?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0"
+          frameborder="0" allowfullscreen
+          allow="autoplay; fullscreen; picture-in-picture"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+        </iframe>
+        <div class="wglow"></div>
+      </div>
+      <div class="winfo">
+        <div class="wcat">Documentary</div>
+        <div class="wtitle">Motivational Talk</div>
+        <div class="wsub">Growth · Mindset</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- LIGHTBOX MODAL -->
+<div id="video-modal" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    <div class="modal-video">
+      <iframe id="modal-iframe" src="" frameborder="0" allowfullscreen
+        allow="autoplay; fullscreen; picture-in-picture"
+        style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;">
+      </iframe>
+    </div>
+  </div>
+</div>
+
+
+<!-- REVIEWS -->
+<section id="reviews">
+  <div class="reveal"><p class="sec-ey">Testimonials</p><h2 class="sec-h">CLIENT <span>REVIEWS</span></h2></div>
+  <div class="rgrid">
+    <div class="rc reveal"><div class="rstar">★★★★★</div><div class="rq">"</div><p class="rtxt">I’ve been going to Kathleen for video edits—weddings, proposals, birthdays, you name it. Honestly, I wouldn’t trust anyone else with my projects because she always delivers top-quality work.</p><div class="rauth"><div class="rav">MDC</div><div><div class="rname">Marlou De Chavez</div><div class="rrole">JOI Police Officer • LPT  </div></div></div></div>
+    <div class="rc reveal d1"><div class="rstar">★★★★★</div><div class="rq">"</div><p class="rtxt">Our Instagram watch time jumped significantly after working with KITCUTS. Kathleen understands hooks, retention, and storytelling better than anyone we've hired. She knows what makes content perform.</p><div class="rauth"><div class="rav">ES</div><div><div class="rname">Enzo Silvestre</div><div class="rrole">Talent Manager</div></div></div></div>
+    <div class="rc reveal d2"><div class="rstar">★★★★★</div><div class="rq">"</div><p class="rtxt">More than just an editor, Kathleen is someone who truly cares about the outcome of every project. Her work is clean, creative, and well thought out. She follow directions well and consistently deliver on time
+</p><div class="rauth"><div class="rav">GS</div><div><div class="rname">Gabriel Sabellano</div><div class="rrole">GMA Content Videographer</div></div></div></div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="aframe reveal"><div class="agl-t"></div><div class="agl-o"></div><div class="ainner"><img src="C:\Users\Kit\Downloads\KITCUTSWEBSITE\Image.png" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;border-radius:16px;"/></div><div class="atag">Philippines</div></div>
+  <div class="reveal d1">
+    <p class="sec-ey">About Me</p>
+    <h2 class="sec-h">WHO IS<br><span>KATHLEEN?</span></h2>
+    <p class="abody"><strong>Meet Kathleen Ramos — KITCUTS.</strong><br><br>A freelance video editor with a sharp eye for storytelling and a deep passion for the craft. I specialize in cinematic edits, brand films, and social media content that doesn't just look great — it performs.</p>
+    <p class="abody">Every cut is intentional. Every frame matters. I work with brands, creators, and production teams to transform raw footage into compelling visual stories.</p>
+    <div class="skills"><span class="sk">Capcut Pro</span><span class="sk">Alight Motion</span><span class="sk">Canva Pro</span><span class="sk">Thumbnail Editing</span><span class="sk">Color Grading</span><span class="sk">Lightroom</span></div>
+    <a href="#contact" class="btn-m" style="display:inline-block">Work With Me</a>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="cgl-t"></div><div class="cgl-o"></div>
+  <p class="sec-ey reveal" style="justify-content:center">Contact</p>
+  <h2 class="c-head reveal">LET'S WORK<br><span>TOGETHER</span></h2>
+  <p class="c-sub reveal">Ready to bring your vision to life? Let's create something cinematic.</p>
+  <div class="socials reveal">
+    <a href="mailto:kitcuts.business@gmail.com" class="soc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email</a>
+  </div>
+  <div class="cdiv"></div>
+  <div class="cinfo reveal">
+    <div class="cit"><div class="cl">Email</div><div class="cv">kitcuts.bussiness@gmail.com</div></div>
+    <div class="cit"><div class="cl">Location</div><div class="cv">Philippines 🇵🇭</div></div>
+  </div>
+</section>
+
+<footer>
+  <span class="flogo">KITCUTS</span>
+  <div class="flinks"><a href="#port-portrait">Works</a><a href="#reviews">Reviews</a><a href="#about">About</a><a href="#contact">Contact</a></div>
+  <span class="fcopy">© 2026 Kathleen Ramos · All Rights Reserved</span>
+</footer>
+
+<script>
+// Canvas particles — lightweight
+(function(){
+  const canvas=document.getElementById('pts');
+  const ctx=canvas.getContext('2d');
+  let W,H,pts=[];
+  function resize(){W=canvas.width=canvas.offsetWidth;H=canvas.height=canvas.offsetHeight}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<18;i++){
+    pts.push({x:Math.random()*1000,y:600+Math.random()*500,vx:(Math.random()-.5)*.3,vy:-(0.3+Math.random()*.5),sz:Math.random()<.3?1.8:1.2,col:Math.random()<.6?'rgba(0,191,166,':'rgba(255,107,0,',life:0,maxLife:200+Math.random()*200,delay:Math.random()*200});
+  }
+  let f=0;
+  function draw(){
+    ctx.clearRect(0,0,W,H);f++;
+    pts.forEach(p=>{
+      if(f<p.delay)return;
+      p.life++;
+      if(p.life>p.maxLife){p.life=0;p.x=Math.random()*W;p.y=H*.7+Math.random()*H*.3}
+      const pr=p.life/p.maxLife;
+      const a=pr<.1?pr*10:pr>.8?(1-pr)*5:1;
+      p.x+=p.vx;p.y+=p.vy;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);
+      ctx.fillStyle=p.col+Math.min(a*.6,.6)+')';ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// Scroll reveal
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible')})},{threshold:.06});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// Nav + parallax — throttled
+let ticking=false;
+window.addEventListener('scroll',()=>{
+  if(!ticking){
+    requestAnimationFrame(()=>{
+      const y=window.scrollY;
+      document.getElementById('mainnav').style.padding=y>60?'.75rem 5rem':'1.2rem 5rem';
+      const ht=document.querySelector('.h-title');
+      if(ht&&y<window.innerHeight)ht.style.transform=`translateY(${y*.1}px)`;
+      ticking=false;
+    });
+    ticking=true;
+  }
+});
+
+function toggleNav(){
+  const l=document.querySelector('.nav-links'),c=document.querySelector('.nav-cta');
+  const o=l.style.display==='flex';
+  if(o){l.style.display='';c.style.display='';}
+  else{l.style.cssText='display:flex;flex-direction:column;position:fixed;top:60px;left:0;right:0;background:rgba(7,11,15,.97);padding:2rem;gap:1.5rem;border-bottom:1px solid rgba(255,255,255,.07);z-index:199;backdrop-filter:blur(14px);';c.style.display='none';}
+}
+
+function openModal(url) {
+  document.getElementById('modal-iframe').src = url;
+  document.getElementById('video-modal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-iframe').src = '';
+  document.getElementById('video-modal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Close on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+</script>
+</body>
+</html>
